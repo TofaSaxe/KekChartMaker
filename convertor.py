@@ -4,7 +4,7 @@ import statistics
 from tqdm import tqdm
 import os
 
-def convert(data_path='xlrdToCSV_Convertor/CopiedTable.txt'):
+def convert(data_path):
     extension = os.path.splitext(data_path)[1]
 
     output_file_path = data_path
@@ -13,7 +13,7 @@ def convert(data_path='xlrdToCSV_Convertor/CopiedTable.txt'):
         input_file_path = data_path
 
         # Path to the output CSV file
-        output_file_path = 'xlrdToCSV_Convertor/ConvertedData.csv'
+        output_file_path = 'InitialTable/ConvertedData.csv'
 
         # Read the copied data from the text file
         with open(input_file_path, 'r') as file:
@@ -96,17 +96,23 @@ def convert(data_path='xlrdToCSV_Convertor/CopiedTable.txt'):
 
         median_values = {sensor: statistics.median(values) for sensor, values in sensor_values.items()}
 
+        all_sensors = sorted(set(row[0] for row in processed_data for row[0] in row[:1]))
+        sensors_stdev = {}
+        for sensor in all_sensors:
+            sensors_stdev[sensor] = statistics.stdev(sensor_values[sensor])
+
+
         filtered_processed_data = []
         for row in tqdm(processed_data, desc="Removing outliers"):
             sensor_name = row[0]
             median_value = median_values[sensor_name]
-            if abs(row[2] - median_value) <= 5 * statistics.stdev(sensor_values[sensor_name]):
+            if abs(row[2] - median_value) <= 5 * sensors_stdev[sensor_name]:
                 filtered_processed_data.append(row)
-        # Create a list of all unique sensor names for column headers
-        all_sensors = sorted(set(row[0] for row in filtered_processed_data for row[0] in row[:1]))
 
         # Transform data to have datetime and sensor values as columns
         data_dict = {}
+        last_known_values = {sensor: None for sensor in all_sensors}  # Initialize last known values dictionary
+        
         for row in tqdm(filtered_processed_data, desc="Transforming data structure"):
             time_string = row[1]
             sensor_name = row[0]
@@ -120,10 +126,20 @@ def convert(data_path='xlrdToCSV_Convertor/CopiedTable.txt'):
         with open(output_file_path, 'w', newline='') as csv_file:
             writer = csv.writer(csv_file)
             # Write the header
-            writer.writerow(['datetime'] + all_sensors)
+            writer.writerow(['datetime'] + all_sensors + ['SUM_Flow', 'SUM_Power'])
             
             for time_string, sensors in sorted(data_dict.items()):
-                row = [time_string] + [sensors.get(sensor, '') for sensor in all_sensors]
+                row = [time_string]
+                for sensor in all_sensors:
+                    if sensor in sensors:
+                        last_known_values[sensor] = sensors[sensor]
+                    row.append(last_known_values[sensor])
+
+                sum_flow = float(row[1]) + float(row[5])
+                row.append(sum_flow)
+                sum_power = float(row[4]) + float(row[8])
+                row.append(sum_power)
+
                 writer.writerow(row)
         
     data_dict = {}

@@ -52,7 +52,7 @@ class DynamicChart(FigureCanvas):
 
     def scale_feature(self, feature, unit):
         """Scale the feature data based on its unit."""
-        if unit in ['m³/m', 'kW', 'Celsius']:
+        if unit in ['m³/h', 'kW', 'Celsius']:
             return self.data[feature]
         return self.data[feature]
 
@@ -69,7 +69,7 @@ class DynamicChart(FigureCanvas):
         min_val, max_val = data.min(), data.max()
         
         # Determine reasonable tick spacing
-        if unit == 'm³/m':
+        if unit == 'm³/h':
             tick_interval = max(1, (max_val - min_val) / 10)
         elif unit == 'kW':
             tick_interval = max(10, (max_val - min_val) / 10)
@@ -106,7 +106,7 @@ class DynamicChart(FigureCanvas):
     def get_feature_unit(self, feature):
         """Determine the unit for the feature."""
         units = {
-            'm³/m': ['HM1_Flow', 'HM2_Flow'],
+            'm³/h': ['HM1_Flow', 'HM2_Flow'],
             'kW': ['HM1_Power', 'HM2_Power'],
             'Celsius': ['HM1_Inlet_Temp', 'HM1_Outlet_Temp', 'HM2_Inlet_Temp', 'HM2_Outlet_Temp']
         }
@@ -183,8 +183,8 @@ class App(QMainWindow):
 
     def setup_feature_buttons(self, style):
         positions = {
-            'HM1_Flow': (640, 40), 'HM1_Inlet_Temp': (740, 40), 'HM1_Outlet_Temp': (840, 40), 'HM1_Power': (940, 40),
-            'HM2_Flow': (640, 75), 'HM2_Inlet_Temp': (740, 75), 'HM2_Outlet_Temp': (840, 75), 'HM2_Power': (940, 75)
+            'SUM_Flow': (540, 40), 'HM1_Flow': (640, 40), 'HM1_Inlet_Temp': (740, 40), 'HM1_Outlet_Temp': (840, 40), 'HM1_Power': (940, 40), 
+            'SUM_Power': (540, 75),'HM2_Flow': (640, 75), 'HM2_Inlet_Temp': (740, 75), 'HM2_Outlet_Temp': (840, 75), 'HM2_Power': (940, 75)
         }
 
         for feature, (x, y) in positions.items():
@@ -207,7 +207,7 @@ class App(QMainWindow):
         """Handle import button click."""
         self.filepath, _ = QFileDialog.getOpenFileName(self, "Select CSV or TXT File")
         cnv.convert(self.filepath)
-        self.filepath = 'xlrdToCSV_Convertor/ConvertedData.csv'
+        self.filepath = 'InitialTable/ConvertedData.csv'
         if self.filepath:
             self.dynamic_chart.load_data(self.filepath, self.feature_states)
 
