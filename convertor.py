@@ -3,6 +3,24 @@ import datetime
 import statistics
 from tqdm import tqdm
 import os
+import chardet
+
+def read_file_with_encoding(file_path):
+    # Try to detect the encoding first
+    with open(file_path, 'rb') as file:
+        raw_data = file.read()
+        result = chardet.detect(raw_data)
+        encoding = result['encoding']
+    
+    # Try reading the file with the detected encoding
+    try:
+        with open(file_path, 'r', encoding=encoding) as file:
+            data_lines = file.readlines()
+    except UnicodeDecodeError:
+        # If the detected encoding fails, try 'latin-1' as a fallback
+        with open(file_path, 'r', encoding='latin-1') as file:
+            data_lines = file.readlines()
+    return data_lines
 
 def convert(data_path):
     extension = os.path.splitext(data_path)[1]
@@ -15,16 +33,11 @@ def convert(data_path):
         # Path to the output CSV file
         output_file_path = 'InitialTable/ConvertedData.csv'
 
-        # Read the copied data from the text file
-        with open(input_file_path, 'r') as file:
-            # Each line in the file represents a row in the Google Sheets table
-            data_lines = file.readlines()
+        data_lines = read_file_with_encoding(input_file_path)
 
         # Split each line by tab character to separate columns and remove quotes
         table_data = [line.strip().replace('"', '').split('\t') for line in data_lines]
 
-        # Set the first line as the header
-        headers = table_data[0]
 
         # Define columns to remove (by index)
         columns_to_remove = [3, 4]  # Example: remove 'Validity' and 'Time_ms' columns
